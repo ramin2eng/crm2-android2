@@ -1,0 +1,51 @@
+package com.example.crm2.ui.theme
+
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DropdownMenuStatus(
+    statusOptions: List<String>,
+    selectedStatus: String,
+    onStatusSelected: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded },
+    ) {
+        OutlinedTextField(
+            value = selectedStatus,
+            onValueChange = { },
+            readOnly = true,
+            label = { Text("وضعیت مشتری") },
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+            },
+            modifier = Modifier
+                .menuAnchor() // مهم برای اتصال منو
+                .fillMaxWidth()
+        )
+
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            statusOptions.forEach { status ->
+                DropdownMenuItem(
+                    text = { Text(text = status) },
+                    onClick = {
+                        onStatusSelected(status)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}

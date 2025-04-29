@@ -1,0 +1,408 @@
+package com.example.crm2
+
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import com.example.crm2.ui.theme.DropdownMenuStatus
+import java.text.DecimalFormat
+import java.util.Calendar
+import androidx.compose.material3.Icon
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import android.widget.Toast
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.text.style.TextAlign
+import com.example.crm2.model.CallLogEntry
+import com.example.crm2.util.getCallLogs
+import kotlinx.coroutines.launch
+
+
+fun String?.orZero(): Int = this?.toIntOrNull() ?: 0
+////////////////
+@Composable
+fun AddCustomerScreen(navController: NavController) {
+    val context = LocalContext.current
+    val scrollState = rememberScrollState()
+    val coroutineScope = rememberCoroutineScope()
+
+    var name by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") }
+    val todayPersianDate = remember { getTodayPersianDate() }
+    var date by remember { mutableStateOf(todayPersianDate) }
+    var deviceName by remember { mutableStateOf("") }
+    var address by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+    var extraDescription by remember { mutableStateOf("") }
+    var wage by remember { mutableStateOf("") }
+    var partsCost by remember { mutableStateOf("") }
+    var totalCostInput by remember { mutableStateOf("") }
+    var status by remember { mutableStateOf("خوب") }
+    val statusOptions = listOf("ضعیف", "متوسط", "خوب", "عالی")
+    val decimalFormat = DecimalFormat("#,###")
+
+    val partsCostValue = partsCost.toDoubleOrNull() ?: 0.0
+    val wageValue = wage.toDoubleOrNull() ?: 0.0
+    val totalCostValue = totalCostInput.toDoubleOrNull() ?: 0.0
+    val calculatedWage = (totalCostValue - partsCostValue).coerceAtLeast(0.0)
+
+    val formattedPartsCostWithComma = if (partsCost.isNotEmpty()) decimalFormat.format(partsCostValue) else ""
+    val formattedWageWithComma = if (wage.isNotEmpty()) decimalFormat.format(wageValue) else ""
+    val formattedTotalCostWithComma = if (totalCostInput.isNotEmpty()) decimalFormat.format(totalCostValue) else ""
+
+    var isPermissionGranted by remember { mutableStateOf(false) }
+    var recentCalls by remember { mutableStateOf<List<CallLogEntry>>(emptyList()) }
+    var showCallLogDialog by remember { mutableStateOf(false) }
+
+    RequestCallLogPermission {
+        isPermissionGranted = true
+        coroutineScope.launch {
+            recentCalls = getCallLogs(context, limit = 20) // حداکثر ۲۰ تماس
+        }
+    }
+
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+                .padding(16.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFF42A5F5))
+                    .padding(8.dp)
+            ) {
+                Text(
+                    "افزودن مشتری جدید",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = date,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                    modifier = Modifier.weight(1f).padding(4.dp),
+                    textAlign = TextAlign.Start
+                )
+                Text(
+                    text = "دستمزد: ${decimalFormat.format(calculatedWage)} تومان",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                    modifier = Modifier.weight(1f).padding(4.dp),
+                    textAlign = TextAlign.Start
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                CustomTextField(
+                    label = "هزینه لوازم",
+                    value = formattedPartsCostWithComma,
+                    modifier = Modifier.weight(1f),
+                    keyboardType = KeyboardType.Number
+                ) { partsCost = it.replace(",", "") }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                CustomTextField(
+                    label = "مبلغ کل",
+                    value = formattedTotalCostWithComma,
+                    modifier = Modifier.weight(1f),
+                    keyboardType = KeyboardType.Number
+                ) { totalCostInput = it.replace(",", "") }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                CustomTextField("نام", name, Modifier.weight(1f)) { name = it }
+                Spacer(modifier = Modifier.width(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    CustomTextFieldWithIcon(
+                        label = "تلفن",
+                        value = phone,
+                        onValueChange = { phone = it },
+                        icon = Icons.Default.Phone,
+                        onIconClick = {
+                            if (isPermissionGranted) {
+                                showCallLogDialog = true
+                            } else {
+                                Toast.makeText(context, "مجوز دسترسی به لیست تماس‌ها لازم است.", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            CustomTextField("نام دستگاه", deviceName) { deviceName = it }
+            CustomTextField("آدرس", address) { address = it }
+            CustomTextField("توضیحات", description) { description = it }
+            CustomTextField("توضیحات اضافی", extraDescription) { extraDescription = it }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("وضعیت مشتری:", modifier = Modifier.padding(top = 8.dp, bottom = 4.dp))
+            DropdownMenuStatus(
+                statusOptions = statusOptions,
+                selectedStatus = status,
+                onStatusSelected = { selected -> status = selected }
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ✅ دکمه‌های خالی کردن فرم و ثبت مشتری
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Button(
+                    onClick = {
+                        // خالی کردن همه فیلدها
+                        name = ""
+                        phone = ""
+                        date = todayPersianDate
+                        deviceName = ""
+                        address = ""
+                        description = ""
+                        extraDescription = ""
+                        wage = ""
+                        partsCost = ""
+                        totalCostInput = ""
+                        status = "خوب"
+                    }
+                ) {
+                    Text("خالی کردن فرم")
+                }
+
+                Button(
+                    onClick = {
+                        Toast.makeText(context, "ثبت شد (درحال توسعه)", Toast.LENGTH_SHORT).show()
+                        navController.popBackStack()
+                    }
+                ) {
+                    Text("ثبت مشتری")
+                }
+            }
+
+            if (showCallLogDialog) {
+                AlertDialog(
+                    onDismissRequest = { showCallLogDialog = false },
+                    title = { Text("انتخاب تماس اخیر") },
+                    text = {
+                        Column(modifier = Modifier.fillMaxWidth().heightIn(max = 300.dp).verticalScroll(rememberScrollState())) {
+                            recentCalls.forEach { entry ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            name = entry.name ?: ""
+                                            phone = entry.phoneNumber
+                                            showCallLogDialog = false
+                                        }
+                                        .padding(8.dp)
+                                ) {
+                                    Text("${entry.name} - ${entry.phoneNumber}")
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { showCallLogDialog = false }) {
+                            Text("بستن")
+                        }
+                    }
+                )
+            }
+        }
+    }
+}
+////////////////
+@Composable
+fun RequestCallLogPermission(onPermissionGranted: () -> Unit) {
+    val context = LocalContext.current
+
+    // Check if the permission is already granted
+    val hasPermission = ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.READ_CALL_LOG
+    ) == PackageManager.PERMISSION_GRANTED
+
+    // Launcher for requesting permission
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            onPermissionGranted()
+        } else {
+            Toast.makeText(context, "مجوز دسترسی به لیست تماس‌ها رد شد.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        if (!hasPermission) {
+            permissionLauncher.launch(Manifest.permission.READ_CALL_LOG)
+        } else {
+            onPermissionGranted()
+        }
+    }
+}
+////////////////
+@Composable
+fun CustomTextFieldWithIcon(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onIconClick: () -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            label = { Text(label) },
+            modifier = Modifier.weight(1f),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+        )
+        IconButton(onClick = onIconClick, modifier = Modifier.size(40.dp)) {
+            Icon(
+                imageVector = icon,
+                contentDescription = "انتخاب شماره از لیست تماس‌ها"
+            )
+        }
+    }
+}
+////////////////
+@Composable
+fun CustomTextField(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    onValueChange: (String) -> Unit
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        modifier = modifier.fillMaxWidth().padding(vertical = 4.dp),
+        keyboardOptions = KeyboardOptions.Default.copy(
+            keyboardType = keyboardType,
+            imeAction = ImeAction.Next
+        )
+    )
+}
+////////////////
+@Composable
+fun RequestContactPermission(onPermissionGranted: () -> Unit) {
+    val context = LocalContext.current
+
+    // Check if the permission is already granted
+    val hasPermission = ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.READ_CONTACTS
+    ) == PackageManager.PERMISSION_GRANTED
+
+    // Launcher for requesting permission
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            onPermissionGranted()
+        } else {
+            Toast.makeText(context, "مجوز دسترسی به دفترچه تلفن رد شد.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        if (!hasPermission) {
+            permissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+        } else {
+            onPermissionGranted()
+        }
+    }
+}
+////////////////
+// تابع تبدیل تاریخ میلادی به شمسی
+fun getTodayPersianDate(): String {
+    val calendar = Calendar.getInstance()
+    val year = calendar.get(Calendar.YEAR)
+    val month = calendar.get(Calendar.MONTH) + 1
+    val day = calendar.get(Calendar.DAY_OF_MONTH)
+    val persianDate = PersianDate()
+    return persianDate.gregorianToJalali(year, month, day)
+}
+////////////////
+class PersianDate {
+    fun gregorianToJalali(gy: Int, gm: Int, gd: Int): String {
+        val g_d_m = intArrayOf(0, 31, if (gy % 4 == 0 && gy % 100 != 0 || gy % 400 == 0) 29 else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+        var jy = if (gy > 1600) 979 else 0
+        var gy2 = if (gy > 1600) gy - 1600 else gy - 621
+        var gm2 = gm
+        var gd2 = gd
+
+        var days = (365 * gy2) + ((gy2 + 3) / 4) - ((gy2 + 99) / 100) + ((gy2 + 399) / 400)
+        for (i in 0 until gm2) days += g_d_m[i]
+        days += gd2 - 1
+
+        var j_day_no = days - 79
+        val j_np = j_day_no / 12053
+        j_day_no %= 12053
+
+        jy += 33 * j_np + 4 * (j_day_no / 1461)
+        j_day_no %= 1461
+
+        if (j_day_no >= 366) {
+            jy += (j_day_no - 1) / 365
+            j_day_no = (j_day_no - 1) % 365
+        }
+
+        val jm: Int
+        val jd: Int
+
+        val j_days_in_month = intArrayOf(31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29)
+        var i = 0
+        while (i < 12 && j_day_no >= j_days_in_month[i]) {
+            j_day_no -= j_days_in_month[i]
+            i++
+        }
+        jm = i + 1
+        jd = j_day_no + 1
+
+        return "%04d/%02d/%02d".format(jy, jm, jd)
+    }
+}
+////////////////

@@ -1,0 +1,165 @@
+package com.example.crm2
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.compose.*
+import com.example.crm2.ui.theme.CRMTheme
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            CRMTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    // تنظیم ناوبری (Navigation)
+                    val navController = rememberNavController()
+                    NavHost(navController = navController, startDestination = "main") {
+                        composable("main") { MainScreen(navController) }
+                        composable("add_customer") { AddCustomerScreen(navController) }
+
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MainScreen(navController: NavController) {
+    var searchQuery by remember { mutableStateOf(TextFieldValue("")) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFE3F2FD)) // رنگ پس‌زمینه
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "CRM مدیریت مشتریان",
+            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.CenterHorizontally)
+                .offset(y = 12.dp),
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            label = { Text("جستجوی مشتری") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.CenterHorizontally),
+            textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
+            singleLine = true
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        ExtendedFloatingActionButton(
+            onClick = { navController.navigate("add_customer") }, // رفتن به صفحه افزودن مشتری
+            modifier = Modifier.align(Alignment.End),
+            containerColor = Color(0xFF26A69A),
+            contentColor = Color.White,
+            icon = { Icon(Icons.Filled.Add, contentDescription = "Add Customer") },
+            text = { Text("افزودن") }
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp)
+                .weight(1f)
+                .background(
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(12.dp)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                "لیست مشتریان هنوز اضافه نشده است...",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Right
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Button(
+                onClick = { /* Backup logic */ },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Backup")
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Button(
+                onClick = { /* Restore logic */ },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Restore")
+            }
+        }
+    }
+}
+
+@Composable
+fun AddCustomerScreen() {
+    // صفحه افزودن مشتری (برای نمونه به طور ساده طراحی شده)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .background(Color(0xFFE3F2FD))
+    ) {
+        Text(
+            text = "افزودن مشتری جدید",
+            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // سایر فیلدهای افزودن مشتری را در اینجا اضافه کنید
+
+        Button(
+            onClick = { /* ثبت مشتری */ },
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        ) {
+            Text("ثبت مشتری")
+        }
+    }
+}

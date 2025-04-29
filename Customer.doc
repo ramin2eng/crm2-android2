@@ -1,0 +1,28 @@
+package com.example.crm2.model
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "customer_table")
+data class Customer(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+
+    val name: String,
+    val phone: String,
+    val date: String,
+    val deviceName: String,
+    val address: String,
+    val description: String,
+    val additionalDescription: String,
+
+    val laborCost: Double,
+    val partsCost: Double,
+    val totalCost: Double,
+
+    val customerStatus: String, // "ضعیف", "متوسط", "خوب", "عالی"
+
+    val photoUri: String? = null, // مسیر عکس رسید یا قطعه
+    val followUpDate: String? = null // تاریخ یادآوری تعمیر یا پیگیری
+)
+

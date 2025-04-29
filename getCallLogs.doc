@@ -1,0 +1,40 @@
+package com.example.crm2.util
+
+
+import android.content.Context
+import android.provider.CallLog
+import com.example.crm2.model.CallLogEntry
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+
+fun getCallLogs(context: Context, limit: Int = 20): List<CallLogEntry> {
+    val callLogs = mutableListOf<CallLogEntry>()
+
+    if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALL_LOG)
+        == PackageManager.PERMISSION_GRANTED) {
+
+        val cursor = context.contentResolver.query(
+            CallLog.Calls.CONTENT_URI,
+            null,
+            null,
+            null,
+            "${CallLog.Calls.DATE} DESC" // اینجا دیگه LIMIT نمی‌ذاریم
+        )
+
+        cursor?.use {
+            val nameIndex = it.getColumnIndex(CallLog.Calls.CACHED_NAME)
+            val numberIndex = it.getColumnIndex(CallLog.Calls.NUMBER)
+
+            var count = 0
+            while (it.moveToNext() && count < limit) {
+                val name = it.getString(nameIndex) ?: "بدون نام"
+                val number = it.getString(numberIndex) ?: ""
+                callLogs.add(CallLogEntry(name, number))
+                count++
+            }
+        }
+    }
+
+    return callLogs
+}

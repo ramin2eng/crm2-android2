@@ -1,0 +1,48 @@
+package com.example.crm2.ui.screens
+
+
+import android.app.Activity
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import com.example.crm2.model.CallLogEntry
+import com.example.crm2.util.getCallLogs
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CallLogScreen(navController: NavController, onItemSelected: (name: String?, phone: String) -> Unit) {
+    val context = LocalContext.current
+    val logs by remember { mutableStateOf(getCallLogs(context)) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(title = { Text("انتخاب تماس اخیر") })
+        }
+    ) { padding ->
+        LazyColumn(modifier = Modifier.padding(padding).fillMaxSize()) {
+            items(logs) { log ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            onItemSelected(log.name, log.phoneNumber)
+                            navController.popBackStack()
+                        }
+                        .padding(16.dp)
+                ) {
+                    Text(text = log.name ?: "(بدون نام)", style = MaterialTheme.typography.titleMedium)
+                    Text(text = log.phoneNumber, style = MaterialTheme.typography.bodyMedium)
+                }
+                Divider()
+            }
+        }
+    }
+}
